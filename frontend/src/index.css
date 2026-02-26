@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-charcoal-950 text-cream-50 font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+
+  a {
+    @apply transition-colors duration-200;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gold-500 hover:bg-gold-600 text-charcoal-900 font-semibold py-3 px-6 rounded-lg transition-all duration-300 hover:shadow-lg hover:shadow-gold-500/25 active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply border border-gold-500/50 text-gold-400 hover:bg-gold-500/10 font-medium py-3 px-6 rounded-lg transition-all duration-300;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200;
+  }
+
+  .card {
+    @apply bg-charcoal-800/50 backdrop-blur-sm border border-charcoal-700/50 rounded-2xl overflow-hidden transition-all duration-300 hover:border-gold-500/30 hover:shadow-lg hover:shadow-gold-500/5;
+  }
+
+  .input-field {
+    @apply w-full bg-charcoal-800 border border-charcoal-600 rounded-lg px-4 py-3 text-cream-50 placeholder-charcoal-400 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500/50 transition-all duration-200;
+  }
+
+  .select-field {
+    @apply w-full bg-charcoal-800 border border-charcoal-600 rounded-lg px-4 py-3 text-cream-50 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500/50 transition-all duration-200 appearance-none;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-pending { @apply bg-yellow-500/20 text-yellow-400; }
+  .badge-preparing { @apply bg-blue-500/20 text-blue-400; }
+  .badge-ready { @apply bg-green-500/20 text-green-400; }
+  .badge-delivered { @apply bg-charcoal-500/20 text-charcoal-300; }
+  .badge-confirmed { @apply bg-green-500/20 text-green-400; }
+  .badge-cancelled { @apply bg-red-500/20 text-red-400; }
+
+  .glass {
+    @apply bg-charcoal-800/30 backdrop-blur-md border border-charcoal-700/30;
+  }
+
+  .section-heading {
+    @apply text-3xl md:text-4xl font-display font-bold text-cream-50 mb-2;
+  }
+
+  .section-subheading {
+    @apply text-charcoal-300 text-lg max-w-2xl;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1a1a2e;
+}
+::-webkit-scrollbar-thumb {
+  background: #4a4a53;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #e0a96d;
+}
