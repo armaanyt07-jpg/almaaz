@@ -85,16 +85,22 @@ const OrderHistory = () => {
                                         </div>
                                     </div>
 
-                                    {/* Pickup info for pre-orders */}
-                                    {order.orderType === 'pre-order' && order.pickupDate && (
+                                    {/* Dining info for pre-orders */}
+                                    {order.orderType === 'pre-order' && order.diningDate && (
                                         <div className="bg-charcoal-800/50 rounded-lg p-3 mb-3 flex flex-wrap gap-4 text-sm">
                                             <div>
-                                                <span className="text-charcoal-400">Pickup: </span>
-                                                <span className="text-cream-50 font-medium">{order.pickupDate} at {order.pickupTime}</span>
+                                                <span className="text-charcoal-400">Dining: </span>
+                                                <span className="text-cream-50 font-medium">{order.diningDate} at {order.diningTime}</span>
                                             </div>
+                                            {order.tableNumber > 0 && (
+                                                <div>
+                                                    <span className="text-charcoal-400">Table: </span>
+                                                    <span className="text-gold-400 font-bold">T{order.tableNumber}</span>
+                                                </div>
+                                            )}
                                             {order.paymentId && (
                                                 <div>
-                                                    <span className="text-charcoal-400">Payment ID: </span>
+                                                    <span className="text-charcoal-400">Payment: </span>
                                                     <span className="text-green-400 font-mono text-xs">{order.paymentId}</span>
                                                 </div>
                                             )}

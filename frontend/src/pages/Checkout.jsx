@@ -8,6 +8,7 @@ import {
     HiOutlineShieldCheck,
     HiOutlineLockClosed,
     HiOutlineCheck,
+    HiOutlineUsers,
 } from 'react-icons/hi';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -19,13 +20,16 @@ const Checkout = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
 
-    const [step, setStep] = useState(1); // 1: pickup details, 2: payment, 3: confirmation
+    const [step, setStep] = useState(1); // 1: dining details, 2: payment, 3: confirmation
     const [loading, setLoading] = useState(false);
+    const [tablesLoading, setTablesLoading] = useState(false);
     const [orderResult, setOrderResult] = useState(null);
+    const [tables, setTables] = useState([]);
 
-    const [pickupDetails, setPickupDetails] = useState({
-        pickupDate: '',
-        pickupTime: '',
+    const [diningDetails, setDiningDetails] = useState({
+        diningDate: '',
+        diningTime: '',
+        tableNumber: 0,
         customerNote: '',
     });
 
@@ -38,10 +42,34 @@ const Checkout = () => {
 
     const today = new Date().toISOString().split('T')[0];
 
-    const pickupSlots = [
+    const diningSlots = [
         '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00',
-        '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00',
+        '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00',
     ];
+
+    // Fetch available tables when date + time are both selected
+    const fetchTables = async (date, time) => {
+        if (!date || !time) return;
+        setTablesLoading(true);
+        try {
+            const { data } = await API.get(`/orders/tables?date=${date}&time=${time}`);
+            setTables(data);
+        } catch (error) {
+            toast.error('Failed to load table availability');
+        } finally {
+            setTablesLoading(false);
+        }
+    };
+
+    const handleDateChange = (date) => {
+        setDiningDetails({ ...diningDetails, diningDate: date, tableNumber: 0 });
+        fetchTables(date, diningDetails.diningTime);
+    };
+
+    const handleTimeChange = (time) => {
+        setDiningDetails({ ...diningDetails, diningTime: time, tableNumber: 0 });
+        fetchTables(diningDetails.diningDate, time);
+    };
 
     // Format card number with spaces
     const formatCardNumber = (value) => {
@@ -50,17 +78,20 @@ const Checkout = () => {
         return matches ? matches.join(' ').slice(0, 19) : v;
     };
 
-    // Format expiry as MM/YY
     const formatExpiry = (value) => {
         const v = value.replace(/[^0-9]/g, '');
         if (v.length >= 2) return v.slice(0, 2) + '/' + v.slice(2, 4);
         return v;
     };
 
-    const handlePickupNext = (e) => {
+    const handleDiningNext = (e) => {
         e.preventDefault();
-        if (!pickupDetails.pickupDate || !pickupDetails.pickupTime) {
-            toast.error('Please select pickup date and time');
+        if (!diningDetails.diningDate || !diningDetails.diningTime) {
+            toast.error('Please select a date and time');
+            return;
+        }
+        if (!diningDetails.tableNumber) {
+            toast.error('Please select a table');
             return;
         }
         setStep(2);
@@ -69,7 +100,6 @@ const Checkout = () => {
     const handlePayment = async (e) => {
         e.preventDefault();
 
-        // Basic card validation
         const cardNum = cardDetails.cardNumber.replace(/\s/g, '');
         if (cardNum.length < 16) {
             toast.error('Please enter a valid card number');
@@ -105,17 +135,18 @@ const Checkout = () => {
                 items: orderItems,
                 totalAmount: cartTotal,
                 orderType: 'pre-order',
-                pickupDate: pickupDetails.pickupDate,
-                pickupTime: pickupDetails.pickupTime,
+                diningDate: diningDetails.diningDate,
+                diningTime: diningDetails.diningTime,
+                tableNumber: diningDetails.tableNumber,
                 paymentMethod: 'card',
-                customerNote: pickupDetails.customerNote,
+                customerNote: diningDetails.customerNote,
             });
 
             setOrderResult(data);
             clearCart();
             setStep(3);
 
-            toast.success('Payment successful! Order confirmed.', {
+            toast.success('Payment successful! Your table is booked.', {
                 style: {
                     background: '#1a1a2e',
                     color: '#fefcf7',
@@ -131,18 +162,19 @@ const Checkout = () => {
         }
     };
 
-    // Redirect if cart is empty and not on confirmation step
     if (cartItems.length === 0 && step !== 3) {
         navigate('/cart');
         return null;
     }
+
+    const selectedTable = tables.find((t) => t.number === diningDetails.tableNumber);
 
     return (
         <div className="min-h-screen pt-24 pb-16">
             <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Progress Steps */}
                 <div className="flex items-center justify-center mb-10">
-                    {['Pickup Details', 'Payment', 'Confirmation'].map((label, i) => (
+                    {['Select Table', 'Payment', 'Confirmation'].map((label, i) => (
                         <div key={label} className="flex items-center">
                             <div className={`flex items-center gap-2 ${i + 1 <= step ? 'text-gold-400' : 'text-charcoal-500'}`}>
                                 <div
@@ -164,44 +196,45 @@ const Checkout = () => {
                     ))}
                 </div>
 
-                {/* Step 1: Pickup Details */}
+                {/* Step 1: Dining Details & Table Selection */}
                 {step === 1 && (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                         <div className="card p-6 sm:p-8">
                             <h2 className="text-2xl font-display font-bold text-cream-50 mb-6">
-                                <HiOutlineClock className="inline w-6 h-6 text-gold-500 mr-2" />
-                                When would you like to pick up?
+                                Choose Your Table & Dining Time
                             </h2>
 
-                            <form onSubmit={handlePickupNext} className="space-y-5">
+                            <form onSubmit={handleDiningNext} className="space-y-6">
+                                {/* Date */}
                                 <div>
                                     <label className="block text-sm text-charcoal-300 mb-1">
                                         <HiOutlineCalendar className="inline w-4 h-4 mr-1" />
-                                        Pickup Date
+                                        Dining Date
                                     </label>
                                     <input
                                         type="date"
                                         required
                                         min={today}
                                         className="input-field"
-                                        value={pickupDetails.pickupDate}
-                                        onChange={(e) => setPickupDetails({ ...pickupDetails, pickupDate: e.target.value })}
-                                        id="checkout-pickup-date"
+                                        value={diningDetails.diningDate}
+                                        onChange={(e) => handleDateChange(e.target.value)}
+                                        id="checkout-dining-date"
                                     />
                                 </div>
 
+                                {/* Time Slots */}
                                 <div>
                                     <label className="block text-sm text-charcoal-300 mb-2">
                                         <HiOutlineClock className="inline w-4 h-4 mr-1" />
-                                        Pickup Time
+                                        Dining Time
                                     </label>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {pickupSlots.map((slot) => (
+                                    <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                                        {diningSlots.map((slot) => (
                                             <button
                                                 key={slot}
                                                 type="button"
-                                                onClick={() => setPickupDetails({ ...pickupDetails, pickupTime: slot })}
-                                                className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${pickupDetails.pickupTime === slot
+                                                onClick={() => handleTimeChange(slot)}
+                                                className={`py-2 px-2 rounded-lg text-sm font-medium transition-all ${diningDetails.diningTime === slot
                                                         ? 'bg-gold-500 text-charcoal-900 shadow-lg shadow-gold-500/25'
                                                         : 'bg-charcoal-800 text-charcoal-300 hover:bg-charcoal-700 hover:text-cream-50'
                                                     }`}
@@ -212,21 +245,96 @@ const Checkout = () => {
                                     </div>
                                 </div>
 
+                                {/* Table Selection */}
+                                {diningDetails.diningDate && diningDetails.diningTime && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                    >
+                                        <label className="block text-sm text-charcoal-300 mb-3">
+                                            <HiOutlineUsers className="inline w-4 h-4 mr-1" />
+                                            Select a Table
+                                        </label>
+
+                                        {tablesLoading ? (
+                                            <div className="flex items-center justify-center py-8">
+                                                <div className="w-6 h-6 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
+                                                <span className="text-charcoal-400 ml-3 text-sm">Loading tables...</span>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                                {tables.map((table) => (
+                                                    <button
+                                                        key={table.number}
+                                                        type="button"
+                                                        disabled={!table.available}
+                                                        onClick={() =>
+                                                            setDiningDetails({ ...diningDetails, tableNumber: table.number })
+                                                        }
+                                                        className={`relative p-4 rounded-xl text-center transition-all border-2 ${!table.available
+                                                                ? 'bg-charcoal-800/30 border-charcoal-700/20 opacity-40 cursor-not-allowed'
+                                                                : diningDetails.tableNumber === table.number
+                                                                    ? 'bg-gold-500/15 border-gold-500 shadow-lg shadow-gold-500/10'
+                                                                    : 'bg-charcoal-800/50 border-charcoal-700/30 hover:border-gold-500/50 hover:bg-charcoal-800'
+                                                            }`}
+                                                    >
+                                                        <div className={`text-lg font-bold mb-1 ${diningDetails.tableNumber === table.number ? 'text-gold-400' : 'text-cream-50'
+                                                            }`}>
+                                                            T{table.number}
+                                                        </div>
+                                                        <div className="text-xs text-charcoal-400">
+                                                            {table.seats} seats
+                                                        </div>
+                                                        {!table.available && (
+                                                            <span className="absolute top-1 right-1 text-[10px] text-red-400 font-medium">
+                                                                Booked
+                                                            </span>
+                                                        )}
+                                                        {diningDetails.tableNumber === table.number && (
+                                                            <motion.div
+                                                                initial={{ scale: 0 }}
+                                                                animate={{ scale: 1 }}
+                                                                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gold-500 rounded-full flex items-center justify-center"
+                                                            >
+                                                                <HiOutlineCheck className="w-3 h-3 text-charcoal-900" />
+                                                            </motion.div>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Table legend */}
+                                        <div className="flex flex-wrap gap-4 mt-3 text-xs text-charcoal-400">
+                                            <span className="flex items-center gap-1">
+                                                <span className="w-3 h-3 rounded bg-charcoal-800 border border-charcoal-700/30" /> Available
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <span className="w-3 h-3 rounded bg-gold-500/15 border border-gold-500" /> Selected
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <span className="w-3 h-3 rounded bg-charcoal-800/30 opacity-40" /> Booked
+                                            </span>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {/* Special Instructions */}
                                 <div>
                                     <label className="block text-sm text-charcoal-300 mb-1">Special Instructions (Optional)</label>
                                     <textarea
-                                        rows={3}
+                                        rows={2}
                                         className="input-field resize-none"
-                                        placeholder="Any dietary requirements, allergies, or special requests..."
-                                        value={pickupDetails.customerNote}
-                                        onChange={(e) => setPickupDetails({ ...pickupDetails, customerNote: e.target.value })}
+                                        placeholder="Dietary requirements, allergies, celebrations..."
+                                        value={diningDetails.customerNote}
+                                        onChange={(e) => setDiningDetails({ ...diningDetails, customerNote: e.target.value })}
                                         id="checkout-note"
                                     />
                                 </div>
 
                                 {/* Order Summary */}
                                 <div className="border-t border-charcoal-700/30 pt-4">
-                                    <h4 className="text-sm font-semibold text-charcoal-300 mb-3">Order Summary</h4>
+                                    <h4 className="text-sm font-semibold text-charcoal-300 mb-3">Your Order</h4>
                                     <div className="space-y-2 mb-3">
                                         {cartItems.map((item) => (
                                             <div key={item._id} className="flex justify-between text-sm">
@@ -245,7 +353,7 @@ const Checkout = () => {
                                     whileTap={{ scale: 0.98 }}
                                     type="submit"
                                     className="w-full btn-primary py-3 text-lg"
-                                    id="pickup-next-btn"
+                                    id="dining-next-btn"
                                 >
                                     Continue to Payment →
                                 </motion.button>
@@ -269,18 +377,27 @@ const Checkout = () => {
                                 </div>
                             </div>
 
-                            {/* Payment summary bar */}
-                            <div className="bg-charcoal-800/80 rounded-lg p-4 mb-6 flex items-center justify-between">
+                            {/* Booking summary */}
+                            <div className="bg-charcoal-800/80 rounded-lg p-4 mb-6 grid grid-cols-3 gap-4 text-center">
                                 <div>
-                                    <p className="text-charcoal-300 text-sm">Pickup on</p>
-                                    <p className="text-cream-50 font-semibold">
-                                        {pickupDetails.pickupDate} at {pickupDetails.pickupTime}
+                                    <p className="text-charcoal-400 text-xs">Date</p>
+                                    <p className="text-cream-50 font-semibold text-sm">{diningDetails.diningDate}</p>
+                                </div>
+                                <div>
+                                    <p className="text-charcoal-400 text-xs">Time</p>
+                                    <p className="text-cream-50 font-semibold text-sm">{diningDetails.diningTime}</p>
+                                </div>
+                                <div>
+                                    <p className="text-charcoal-400 text-xs">Table</p>
+                                    <p className="text-gold-400 font-bold text-sm">
+                                        T{diningDetails.tableNumber} ({selectedTable?.seats} seats)
                                     </p>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-charcoal-300 text-sm">Amount</p>
-                                    <p className="text-gold-400 font-display text-xl font-bold">${cartTotal.toFixed(2)}</p>
-                                </div>
+                            </div>
+
+                            <div className="bg-charcoal-800/50 rounded-lg p-3 mb-6 flex items-center justify-between">
+                                <span className="text-charcoal-300">Amount to Pay</span>
+                                <span className="text-gold-400 font-display text-xl font-bold">${cartTotal.toFixed(2)}</span>
                             </div>
 
                             <form onSubmit={handlePayment} className="space-y-5">
@@ -395,7 +512,6 @@ const Checkout = () => {
                         className="text-center"
                     >
                         <div className="card p-8 sm:p-10">
-                            {/* Success animation */}
                             <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
@@ -406,13 +522,12 @@ const Checkout = () => {
                             </motion.div>
 
                             <h2 className="text-3xl font-display font-bold text-cream-50 mb-2">
-                                Payment Successful!
+                                You're All Set!
                             </h2>
                             <p className="text-charcoal-300 mb-8">
-                                Your pre-order has been confirmed. We'll have it ready for you!
+                                Your table is reserved and your food will be ready when you arrive.
                             </p>
 
-                            {/* Order details */}
                             <div className="bg-charcoal-800/50 rounded-xl p-6 text-left mb-8 space-y-4">
                                 <div className="flex justify-between">
                                     <span className="text-charcoal-400">Order ID</span>
@@ -422,18 +537,24 @@ const Checkout = () => {
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-charcoal-400">Payment ID</span>
-                                    <span className="text-green-400 font-mono text-sm">{orderResult.paymentId}</span>
+                                    <span className="text-green-400 font-mono text-xs">{orderResult.paymentId}</span>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-charcoal-400">Pickup Date</span>
-                                    <span className="text-cream-50">{orderResult.pickupDate}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-charcoal-400">Pickup Time</span>
-                                    <span className="text-cream-50 font-semibold">{orderResult.pickupTime}</span>
+                                <div className="grid grid-cols-3 gap-4 bg-charcoal-900/50 rounded-lg p-4">
+                                    <div className="text-center">
+                                        <p className="text-charcoal-400 text-xs">Date</p>
+                                        <p className="text-cream-50 font-semibold">{orderResult.diningDate}</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-charcoal-400 text-xs">Time</p>
+                                        <p className="text-cream-50 font-semibold">{orderResult.diningTime}</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-charcoal-400 text-xs">Table</p>
+                                        <p className="text-gold-400 font-bold">T{orderResult.tableNumber}</p>
+                                    </div>
                                 </div>
                                 <div className="border-t border-charcoal-700/30 pt-3">
-                                    <h4 className="text-charcoal-400 text-sm mb-2">Items</h4>
+                                    <h4 className="text-charcoal-400 text-sm mb-2">Items Ordered</h4>
                                     {orderResult.items.map((item, i) => (
                                         <div key={i} className="flex justify-between text-sm mb-1">
                                             <span className="text-charcoal-200">{item.name} × {item.quantity}</span>
@@ -448,10 +569,14 @@ const Checkout = () => {
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-charcoal-400">Payment Status</span>
-                                    <span className="badge badge-confirmed">Paid</span>
+                                    <span className="text-charcoal-400">Payment</span>
+                                    <span className="badge badge-confirmed">✓ Paid</span>
                                 </div>
                             </div>
+
+                            <p className="text-charcoal-400 text-sm mb-6">
+                                Just walk in at your reserved time — your table and food will be waiting!
+                            </p>
 
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <button onClick={() => navigate('/orders')} className="btn-primary flex-1 py-3">

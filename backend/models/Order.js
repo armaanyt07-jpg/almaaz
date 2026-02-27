@@ -34,13 +34,17 @@ const orderSchema = new mongoose.Schema(
             enum: ["dine-in", "pre-order"],
             default: "dine-in",
         },
-        pickupTime: {
+        diningDate: {
             type: String,
             default: "",
         },
-        pickupDate: {
+        diningTime: {
             type: String,
             default: "",
+        },
+        tableNumber: {
+            type: Number,
+            default: 0,
         },
         paymentStatus: {
             type: String,
@@ -59,10 +63,6 @@ const orderSchema = new mongoose.Schema(
         customerNote: {
             type: String,
             default: "",
-        },
-        deliveryAddress: {
-            type: String,
-            default: "Dine-in",
         },
     },
     { timestamps: true }
