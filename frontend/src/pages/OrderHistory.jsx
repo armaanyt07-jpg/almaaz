@@ -71,13 +71,35 @@ const OrderHistory = () => {
                                                 })}
                                             </p>
                                         </div>
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-3 flex-wrap">
+                                            {order.orderType === 'pre-order' && (
+                                                <span className="badge bg-purple-500/20 text-purple-400">Pre-Order</span>
+                                            )}
+                                            {order.paymentStatus === 'paid' && (
+                                                <span className="badge badge-confirmed">💳 Paid</span>
+                                            )}
                                             <span className={`badge ${statusBadge(order.status)}`}>{order.status}</span>
                                             <span className="text-gold-400 font-bold text-lg">
                                                 ${order.totalAmount.toFixed(2)}
                                             </span>
                                         </div>
                                     </div>
+
+                                    {/* Pickup info for pre-orders */}
+                                    {order.orderType === 'pre-order' && order.pickupDate && (
+                                        <div className="bg-charcoal-800/50 rounded-lg p-3 mb-3 flex flex-wrap gap-4 text-sm">
+                                            <div>
+                                                <span className="text-charcoal-400">Pickup: </span>
+                                                <span className="text-cream-50 font-medium">{order.pickupDate} at {order.pickupTime}</span>
+                                            </div>
+                                            {order.paymentId && (
+                                                <div>
+                                                    <span className="text-charcoal-400">Payment ID: </span>
+                                                    <span className="text-green-400 font-mono text-xs">{order.paymentId}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     <div className="border-t border-charcoal-700/30 pt-3">
                                         <div className="flex flex-wrap gap-2">

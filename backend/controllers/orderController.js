@@ -3,10 +3,26 @@ const Order = require("../models/Order");
 // POST /api/orders
 const placeOrder = async (req, res) => {
     try {
-        const { items, totalAmount, deliveryAddress } = req.body;
+        const {
+            items,
+            totalAmount,
+            deliveryAddress,
+            orderType,
+            pickupTime,
+            pickupDate,
+            paymentMethod,
+            customerNote,
+        } = req.body;
 
         if (!items || items.length === 0) {
             return res.status(400).json({ message: "No items in order" });
+        }
+
+        // For pre-orders, pickup date and time are required
+        if (orderType === "pre-order" && (!pickupDate || !pickupTime)) {
+            return res
+                .status(400)
+                .json({ message: "Pickup date and time required for pre-orders" });
         }
 
         const order = await Order.create({
@@ -14,6 +30,16 @@ const placeOrder = async (req, res) => {
             items,
             totalAmount,
             deliveryAddress: deliveryAddress || "Dine-in",
+            orderType: orderType || "dine-in",
+            pickupTime: pickupTime || "",
+            pickupDate: pickupDate || "",
+            paymentMethod: paymentMethod || "none",
+            paymentStatus: paymentMethod === "card" ? "paid" : "unpaid",
+            paymentId:
+                paymentMethod === "card"
+                    ? "PAY_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9)
+                    : "",
+            customerNote: customerNote || "",
         });
 
         res.status(201).json(order);

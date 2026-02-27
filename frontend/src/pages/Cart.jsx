@@ -91,24 +91,38 @@ const Cart = () => {
                             <span className="text-charcoal-300">Subtotal</span>
                             <span className="text-cream-50 font-semibold">${cartTotal.toFixed(2)}</span>
                         </div>
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-charcoal-300">Delivery</span>
-                            <span className="text-green-400 text-sm font-medium">Dine-in</span>
-                        </div>
-                        <div className="border-t border-charcoal-700/50 pt-4 flex items-center justify-between">
+                        <div className="border-t border-charcoal-700/50 pt-4 flex items-center justify-between mb-6">
                             <span className="text-cream-50 font-display text-xl font-bold">Total</span>
                             <span className="text-gold-400 font-display text-2xl font-bold">
                                 ${cartTotal.toFixed(2)}
                             </span>
                         </div>
 
+                        {/* Pre-Order & Pay */}
+                        <motion.button
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => {
+                                if (!user) {
+                                    toast.error('Please sign in to place an order');
+                                    navigate('/login');
+                                    return;
+                                }
+                                navigate('/checkout');
+                            }}
+                            className="w-full btn-primary text-lg py-4 mb-3 flex items-center justify-center gap-2"
+                            id="preorder-pay-btn"
+                        >
+                            🍽️ Pre-Order & Pay Now
+                        </motion.button>
+
+                        {/* Dine-in (pay at restaurant) */}
                         <motion.button
                             whileTap={{ scale: 0.98 }}
                             onClick={handleCheckout}
-                            className="w-full btn-primary mt-6 text-lg py-4"
+                            className="w-full btn-secondary py-3 text-sm"
                             id="checkout-btn"
                         >
-                            Place Order
+                            Order & Pay at Restaurant
                         </motion.button>
                     </div>
                 </motion.div>

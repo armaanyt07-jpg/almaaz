@@ -29,6 +29,37 @@ const orderSchema = new mongoose.Schema(
             enum: ["Pending", "Preparing", "Ready", "Delivered"],
             default: "Pending",
         },
+        orderType: {
+            type: String,
+            enum: ["dine-in", "pre-order"],
+            default: "dine-in",
+        },
+        pickupTime: {
+            type: String,
+            default: "",
+        },
+        pickupDate: {
+            type: String,
+            default: "",
+        },
+        paymentStatus: {
+            type: String,
+            enum: ["unpaid", "paid", "refunded"],
+            default: "unpaid",
+        },
+        paymentMethod: {
+            type: String,
+            enum: ["card", "cash", "none"],
+            default: "none",
+        },
+        paymentId: {
+            type: String,
+            default: "",
+        },
+        customerNote: {
+            type: String,
+            default: "",
+        },
         deliveryAddress: {
             type: String,
             default: "Dine-in",

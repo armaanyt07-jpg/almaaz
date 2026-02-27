@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import OrderHistory from './pages/OrderHistory';
 import AdminDashboard from './pages/AdminDashboard';
+import Checkout from './pages/Checkout';
 
 function App() {
     return (
@@ -36,6 +37,14 @@ function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/menu" element={<Menu />} />
                     <Route path="/cart" element={<Cart />} />
+                    <Route
+                        path="/checkout"
+                        element={
+                            <ProtectedRoute>
+                                <Checkout />
+                            </ProtectedRoute>
+                        }
+                    />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route
